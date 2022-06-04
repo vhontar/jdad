@@ -1,6 +1,7 @@
 package com.easycoding.jdad.serializer
 
 import com.easycoding.jdad.*
+import java.util.function.Consumer
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.createInstance
@@ -103,6 +104,13 @@ object Serializer {
         // While customSerializer has type ValueSerializer<out Any?>? its consumes Nothing but produces Any?
         // toJsonValue function would consume Nothing which is not we are going to give
         // We have to explicitly cast customSerializer to ValueSerializer<Any?> to produce and consume Any?
+
+        // Projections	    Produces	   Consumes	   Behaviour
+        // Crate<Fruit>	    Fruit	       Fruit	   Producer and Consumer
+        // Crate<out Fruit>	Fruit	       Nothing	   Producer only
+        // Crate<in Fruit>	Any?	       Fruit	   Consumer only
+        // Crate<*>	        Any?	       Nothing	   No Producer and No Consumer
+
         @Suppress("UNCHECKED_CAST")
         return customSerializer as? ValueSerializer<Any?>?
     }
