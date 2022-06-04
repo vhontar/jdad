@@ -1,9 +1,9 @@
 package com.easycoding.jdad.serializer
 
 import com.easycoding.jdad.JsonExclude
-import java.io.File.separator
+import com.easycoding.jdad.JsonExcludeNulls
+import com.easycoding.jdad.JsonName
 import kotlin.reflect.KClass
-import kotlin.reflect.KProperty1
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
 
@@ -11,35 +11,90 @@ object Serializer {
     @JvmStatic
     fun serialize(obj: Any): String = buildString { serializeObject(obj) }
 
-    @JvmStatic
     private fun StringBuilder.serializeObject(obj: Any?) {
-        if (obj == null)
+        // TODO remove check for null
+        if (obj == null) {
+            serializePropertyValue(obj)
             return
+        }
 
         val kClass: KClass<Any> = obj.javaClass.kotlin
+
+        // should omit serialization of null values
+        val omitNullValues: Boolean = kClass.annotations.filterIsInstance<JsonExcludeNulls>().firstOrNull() != null
+
+        // find properties of an object
         val memberProperties = kClass.memberProperties
+            .filter { prop -> prop.findAnnotation<JsonExclude>() == null } // exclude properties
 
-        memberProperties.filter { prop -> prop.findAnnotation<JsonExclude>() == null }
-
-        val joined = memberProperties.joinToString(
-            separator = ", ",
+        joinToStringBuilder(
             prefix = "{",
             postfix = "}"
-        ) { property ->
-            "${serializeString(property.name)}: ${property.serializePropertyValue(obj)}"
-        }
+        ) {
+            memberProperties.forEachIndexed { index, property ->
+                val value = property.get(obj)
 
-        append(joined)
+                if (value == null && omitNullValues) {
+                    return@forEachIndexed
+                }
+
+                val propertyName = property.findAnnotation<JsonName>()?.name ?: property.name
+                serializeProperty(propertyName, value, index, memberProperties.size)
+            }
+        }
     }
 
-    private fun serializeString(name: String): String = "\"$name\""
+    private fun StringBuilder.serializeProperty(
+        propertyName: String,
+        value: Any?,
+        index: Int,
+        size: Int
+    ) {
+        serializeString(propertyName)
+        append(": ")
+        serializePropertyValue(value)
+        appendComma(index, size)
+    }
 
-    private fun KProperty1<Any, *>.serializePropertyValue(obj: Any): Any {
-        return when (val res = this.get(obj)) {
-            is String -> res
-            is Boolean -> res
-            is Int -> res
-            else -> buildString { serializeObject(res) }
+    private fun StringBuilder.serializePropertyValue(value: Any?) {
+        when (value) {
+            null -> append("null")
+            is String -> serializeString(value)
+            is Number, is Boolean -> append(value.toString())
+            is List<*> -> serializeList(value)
+            else -> serializeObject(value)
         }
+    }
+
+    private fun StringBuilder.serializeList(list: List<*>) = joinToStringBuilder(
+        prefix = "[",
+        postfix = "]"
+    ) {
+        list.forEachIndexed { index, item ->
+            serializeObject(item)
+            appendComma(index, list.size)
+        }
+    }
+
+    private fun StringBuilder.serializeString(value: String) = append("\"$value\"")
+
+    private fun StringBuilder.joinToStringBuilder(
+        prefix: String,
+        postfix: String,
+        block: () -> Unit
+    ) {
+        append(prefix)
+        block.invoke()
+        append(postfix)
+    }
+
+    // TODO refactor append comma method
+    @Deprecated("not so sure if it's the best method to do that", ReplaceWith("if (index < size - 1) append(\", \")"))
+    private fun StringBuilder.appendComma(
+        index: Int,
+        size: Int
+    ) {
+        if (index < size - 1)
+            append(", ")
     }
 }
