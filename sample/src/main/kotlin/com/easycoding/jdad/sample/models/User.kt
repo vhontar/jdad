@@ -1,8 +1,7 @@
 package com.easycoding.jdad.sample.models
 
-import com.easycoding.jdad.JsonExclude
-import com.easycoding.jdad.JsonExcludeNulls
-import com.easycoding.jdad.JsonName
+import com.easycoding.jdad.*
+import java.util.*
 
 @JsonExcludeNulls
 data class User(
@@ -12,6 +11,7 @@ data class User(
     @JsonExclude val isAdult: Boolean,
     val address: UserAddress,
     val userEmails: List<UserEmail>,
+    @CustomSerializer(DateSerializer::class) val birthday: Date,
     val token: Double? = null,
     val address2: UserAddress? = null
 )

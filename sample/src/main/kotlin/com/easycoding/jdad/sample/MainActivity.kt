@@ -10,6 +10,7 @@ import com.easycoding.jdad.sample.models.User
 import com.easycoding.jdad.sample.models.UserAddress
 import com.easycoding.jdad.sample.models.UserEmail
 import com.easycoding.jdad.serializer.Serializer
+import java.util.*
 
 class MainActivity: AppCompatActivity() {
 
@@ -29,6 +30,7 @@ class MainActivity: AppCompatActivity() {
             isAdult = false,
             address = UserAddress("Horeaandr", 45),
             userEmails = listOf(UserEmail("test@gmail.com"), UserEmail(null), UserEmail("popo@gmail.com")),
+            birthday = Date(),
             token = null
         )
         Log.d("jdadjson", Serializer.serialize(user))
