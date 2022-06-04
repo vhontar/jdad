@@ -99,8 +99,12 @@ object Serializer {
         val customSerializerClass = findAnnotation<CustomSerializer>()?.serializerClass
         val customSerializer = customSerializerClass?.objectInstance ?: customSerializerClass?.createInstance()
 
+        // SomeGeneric<*> is equivalent to SomeGeneric<out Any?>
+        // While customSerializer has type ValueSerializer<out Any?>? its consumes Nothing but produces Any?
+        // toJsonValue function would consume Nothing which is not we are going to give
+        // We have to explicitly cast customSerializer to ValueSerializer<Any?> to produce and consume Any?
         @Suppress("UNCHECKED_CAST")
-        return customSerializer as ValueSerializer<Any?>?
+        return customSerializer as? ValueSerializer<Any?>?
     }
 
     // shorthand for appending string
